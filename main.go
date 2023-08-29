@@ -119,7 +119,7 @@ func main() {
 			rightContainer := rootContainer.Objects[1].(*fyne.Container)
 			rootContainer.Objects[0].(*widget.Label).TextStyle.Bold = currEntry.Processing
 			rootContainer.Objects[0].(*widget.Label).SetText(text)
-			rightContainer.Objects[0].(*widget.Label).SetText(ByteCountIEC(currEntry.Size))
+			rightContainer.Objects[0].(*widget.Label).SetText(core.BytesToIECString(currEntry.Size))
 			rightContainer.Objects[1].(*widget.ProgressBar).SetValue(percentage)
 		})
 
@@ -139,20 +139,6 @@ func main() {
 	// Center and start the application
 	w.CenterOnScreen()
 	w.ShowAndRun()
-}
-
-func ByteCountIEC(b int64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %ciB",
-		float64(b)/float64(div), "KMGTPE"[exp])
 }
 
 func getEntryFromTreeId(rootEntry *core.Entry, path string) *core.Entry {
