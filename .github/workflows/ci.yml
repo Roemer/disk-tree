@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+env:
+  GO_VERSION: 1.21.0
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Go
+        run: |
+          echo "/usr/local/go/bin" >> $GITHUB_PATH
+          wget --no-verbose "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+          sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+          rm "go${GO_VERSION}.linux-amd64.tar.gz"
+
+      - name: Prepare APT
+        run: sudo apt-get update
+
+      - name: Install GCC
+        run: sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+
+      - name: Install mingw-w64
+        run: sudo apt-get install -y mingw-w64
