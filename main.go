@@ -22,7 +22,19 @@ func main() {
 	w := a.NewWindow("Disk Tree")
 	w.Resize(fyne.NewSize(800, 600))
 
-	// Create the controls
+	// Menu
+	menuFile := fyne.NewMenu("File")
+	menuSettings := fyne.NewMenu("Settings")
+
+	var item *fyne.MenuItem
+	item = fyne.NewMenuItem("My Feature", func() {
+		item.Checked = !item.Checked
+		menuSettings.Refresh()
+	})
+
+	menuSettings.Items = append(menuSettings.Items, item)
+	mainMenu := fyne.NewMainMenu(menuFile, menuSettings)
+	w.SetMainMenu(mainMenu)
 
 	// Folder Selection
 	folderPathBinding := binding.NewString()
