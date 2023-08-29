@@ -30,4 +30,14 @@ func init() {
 
 		return execr.Run(true, fynePath, "package", "-os", "windows")
 	}).DependsOn("Setup:Fyne-Cmd")
+
+	gotaskr.Task("Compile:Linux", func() error {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		fynePath := path.Join(homeDir, "go/bin/fyne")
+
+		return execr.Run(true, fynePath, "package", "-os", "linux")
+	}).DependsOn("Setup:Fyne-Cmd")
 }

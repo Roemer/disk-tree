@@ -33,3 +33,21 @@ jobs:
 
       - name: Install mingw-w64
         run: sudo apt-get install -y mingw-w64
+
+      - name: Build Windows
+        run:  go run ./build/build.go --target "Compile:Windows"
+
+      - name: Build Linux
+        run:  go run ./build/build.go --target "Compile:Linux"
+
+      - name: 'Upload Windows Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Windows
+          path: disk-tree.exe
+
+      - name: 'Upload Linux Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: Linux
+          path: disk-tree.tar.xz
