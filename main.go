@@ -3,6 +3,7 @@ package main
 import (
 	"disk-tree/core"
 	"fmt"
+	"sort"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -82,6 +83,29 @@ func main() {
 		}
 	})
 
+	// Sort Button
+	sortButton := widget.NewButton("Sort", func() {
+		dirStack := []*core.Entry{rootEntry}
+		for len(dirStack) > 0 {
+			// Get the next item and remove it from the stack
+			dirIndex := len(dirStack) - 1
+			dir := dirStack[dirIndex]
+			dirStack = dirStack[:dirIndex]
+			// Sort the folders from the dir
+			sort.Slice(dir.Folders, func(i, j int) bool {
+				return dir.Folders[i].Size > dir.Folders[j].Size
+			})
+			// Sort the files from the dir
+			sort.Slice(dir.Files, func(i, j int) bool {
+				return dir.Files[i].Size > dir.Files[j].Size
+			})
+			// Add all folders to the stack to process
+			dirStack = append(dirStack, dir.Folders...)
+		}
+
+		fileTree.Refresh()
+	})
+
 	// The file tree
 	fileTree = widget.NewTree(
 		func(id widget.TreeNodeID) []widget.TreeNodeID {
@@ -134,6 +158,7 @@ func main() {
 				),
 				startButton,
 				progressIndicator,
+				sortButton,
 			), nil, nil, nil, fileTree,
 		),
 	)
