@@ -25,8 +25,11 @@ jobs:
           sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
           rm "go${GO_VERSION}.linux-amd64.tar.gz"
 
+      - name: Prepare APT
+        run: sudo apt-get update
+
       - name: Install GCC
-        run: apt-get install -y gcc libgl1-mesa-dev xorg-dev
+        run: sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
 
       - name: Install mingw-w64
-        run: apt-get install -y mingw-w64
+        run: sudo apt-get install -y mingw-w64
