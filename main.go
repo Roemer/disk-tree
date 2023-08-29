@@ -101,11 +101,13 @@ func main() {
 		},
 		func(branch bool) fyne.CanvasObject {
 			progress := widget.NewProgressBar()
-			progress.TextFormatter = func() string { return fmt.Sprintf("%.2f%%", progress.Value) }
+			progress.TextFormatter = func() string { return fmt.Sprintf("%06.2f%%", progress.Value) }
 			progress.Min = 0
 			progress.Max = 100
 			return container.NewBorder(
-				nil, nil, widget.NewLabel("Left"), container.NewHBox(widget.NewLabel("Right"), progress),
+				nil, nil, widget.NewLabel("Left"), container.NewHBox(
+					widget.NewLabel("Right"), progress,
+				),
 			)
 		},
 		func(id widget.TreeNodeID, branch bool, o fyne.CanvasObject) {

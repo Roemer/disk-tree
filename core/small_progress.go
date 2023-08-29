@@ -16,5 +16,5 @@ func NewProgressBarInfiniteSmall() *ProgressBarInfiniteSmall {
 
 func (p *ProgressBarInfiniteSmall) MinSize() fyne.Size {
 	p.ExtendBaseWidget(p)
-	return fyne.Size{Width: 100, Height: 5}
+	return fyne.Size{Width: p.ProgressBarInfinite.MinSize().Width, Height: 5}
 }
