@@ -1,0 +1,16 @@
+{
+	"name": "Disk Tree",
+	"dockerFile": "Dockerfile",
+	"customizations": {
+		"vscode": {
+			"settings": {
+			},
+			"extensions": [
+				"golang.go",
+				"roemer.gotaskr-vscode",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	},
+	"remoteUser": "vscode"
+}
