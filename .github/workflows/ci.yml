@@ -16,18 +16,17 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: Run a multi-line script
+      - name: Install Go
         run: |
           echo "/usr/local/go/bin" >> $GITHUB_PATH
           wget --no-verbose "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
           sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
           rm "go${GO_VERSION}.linux-amd64.tar.gz"
 
-      - name: Run a one-line script 2
-        run: go version
+      - name: Install GCC
+        run: apt-get install -y gcc libgl1-mesa-dev xorg-dev
+
+      - name: Install mingw-w64
+        run: apt-get install -y mingw-w64
