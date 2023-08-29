@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+env:
+  GO_VERSION: 1.21.0
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      - name: Run a multi-line script
+        run: |
+          echo "/usr/local/go/bin" >> $GITHUB_PATH
+          wget "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+          tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+          rm "go${GO_VERSION}.linux-amd64.tar.gz"
+
+      - name: Run a one-line script 2
+        run: go version
