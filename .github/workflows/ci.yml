@@ -25,8 +25,8 @@ jobs:
       - name: Run a multi-line script
         run: |
           echo "/usr/local/go/bin" >> $GITHUB_PATH
-          wget "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
-          tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+          wget --no-verbose "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+          sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
           rm "go${GO_VERSION}.linux-amd64.tar.gz"
 
       - name: Run a one-line script 2
