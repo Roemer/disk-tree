@@ -37,11 +37,11 @@ func BuildTree(rootEntry *Entry) error {
 	dirStack := []*Entry{rootEntry}
 	for len(dirStack) > 0 {
 		// Get the next directory to process
-		dirIndex := len(dirStack) - 1
-		dir := dirStack[dirIndex]
-		setProcessing(dir, true)
+		dir := dirStack[0]
 		// Pop it from the stack
-		dirStack = dirStack[:dirIndex]
+		dirStack = dirStack[1:]
+		// Mark it as processing
+		setProcessing(dir, true)
 		// Read the directory
 		childEntries, err := os.ReadDir(dir.Path)
 		if err != nil {
