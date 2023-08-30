@@ -38,7 +38,7 @@ func main() {
 	w.SetMainMenu(mainMenu)
 
 	// Folder Selection
-	folderPathBinding := binding.NewString()
+	folderPathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
 	folderEdit := widget.NewEntryWithData(folderPathBinding)
 	folderBrowseButton := widget.NewButton("Browse", func() {
 		folderDialog := dialog.NewFolderOpen(func(lu fyne.ListableURI, err error) {
