@@ -124,12 +124,19 @@ func main() {
 			return currEntry.IsFolder
 		},
 		func(branch bool) fyne.CanvasObject {
+			icon := widget.NewFileIcon(storage.NewFileURI("/"))
 			progress := widget.NewProgressBar()
 			progress.TextFormatter = func() string { return fmt.Sprintf("%06.2f%%", progress.Value) }
 			progress.Min = 0
 			progress.Max = 100
 			return container.NewBorder(
-				nil, nil, widget.NewLabel("Left"), container.NewHBox(
+				nil,
+				nil,
+				container.NewHBox(
+					icon,
+					widget.NewLabel("Left"),
+				),
+				container.NewHBox(
 					widget.NewLabel("Right"), progress,
 				),
 			)
@@ -142,11 +149,19 @@ func main() {
 			}
 			percentage := float64(currEntry.Size) / float64(rootEntry.Size) * 100
 			rootContainer := o.(*fyne.Container)
+			leftContainer := rootContainer.Objects[0].(*fyne.Container)
 			rightContainer := rootContainer.Objects[1].(*fyne.Container)
-			rootContainer.Objects[0].(*widget.Label).TextStyle.Bold = currEntry.Processing
-			rootContainer.Objects[0].(*widget.Label).SetText(text)
-			rightContainer.Objects[0].(*widget.Label).SetText(core.BytesToIECString(currEntry.Size))
-			rightContainer.Objects[1].(*widget.ProgressBar).SetValue(percentage)
+
+			fileIcon := leftContainer.Objects[0].(*widget.FileIcon)
+			nameLabel := leftContainer.Objects[1].(*widget.Label)
+			sizeLabel := rightContainer.Objects[0].(*widget.Label)
+			sizeBar := rightContainer.Objects[1].(*widget.ProgressBar)
+
+			fileIcon.SetURI(storage.NewFileURI(currEntry.Path))
+			nameLabel.TextStyle.Bold = currEntry.Processing
+			nameLabel.SetText(text)
+			sizeLabel.SetText(core.BytesToIECString(currEntry.Size))
+			sizeBar.SetValue(percentage)
 		})
 
 	// Window content
