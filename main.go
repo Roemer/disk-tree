@@ -158,7 +158,16 @@ func main() {
 			sizeBar := rightContainer.Objects[1].(*widget.ProgressBar)
 
 			fileIcon.SetURI(storage.NewFileURI(currEntry.Path))
-			nameLabel.TextStyle.Bold = currEntry.Processing
+			switch currEntry.State {
+			case core.UnprocessedState:
+				nameLabel.Importance = widget.LowImportance
+			case core.ProcessingState:
+				nameLabel.Importance = widget.WarningImportance
+			case core.ErrorState:
+				nameLabel.Importance = widget.DangerImportance
+			default:
+				nameLabel.Importance = widget.MediumImportance
+			}
 			nameLabel.SetText(text)
 			sizeLabel.SetText(core.BytesToIECString(currEntry.Size))
 			sizeBar.SetValue(percentage)

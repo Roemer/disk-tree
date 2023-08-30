@@ -7,15 +7,25 @@ import (
 	"path"
 )
 
+type EntryState int
+
+const (
+	UnprocessedState EntryState = iota
+	ProcessingState
+	ProcessedState
+	ErrorState
+)
+
 type Entry struct {
-	Path       string
-	Name       string
-	IsFolder   bool
-	Size       int64
-	Processing bool
-	Folders    []*Entry
-	Files      []*Entry
-	parent     *Entry
+	Path     string
+	Name     string
+	IsFolder bool
+	Size     int64
+	State    EntryState
+	Error    error
+	Folders  []*Entry
+	Files    []*Entry
+	parent   *Entry
 }
 
 func (entry *Entry) addFile(path string, info fs.FileInfo) {
@@ -24,6 +34,7 @@ func (entry *Entry) addFile(path string, info fs.FileInfo) {
 		Name:     info.Name(),
 		IsFolder: false,
 		Size:     info.Size(),
+		State:    ProcessedState,
 	}
 	entry.Size += childEntry.Size
 	entry.Files = append(entry.Files, childEntry)
@@ -46,7 +57,9 @@ func BuildTree(rootEntry *Entry) error {
 		childEntries, err := os.ReadDir(dir.Path)
 		if err != nil {
 			fmt.Println(err)
+			dir.Error = err
 			setProcessing(dir, false)
+			dir.State = ErrorState
 			continue
 			//return nil, err
 		}
@@ -68,7 +81,7 @@ func BuildTree(rootEntry *Entry) error {
 			}
 			dir.addFile(entryPath, info)
 		}
-		// Increase the space of the parent if needed
+		// Increase the space of all parents
 		parent := dir.parent
 		for parent != nil {
 			parent.Size += dir.Size
@@ -80,10 +93,16 @@ func BuildTree(rootEntry *Entry) error {
 }
 
 func setProcessing(entry *Entry, processing bool) {
-	entry.Processing = processing
+	var newState EntryState
+	if processing {
+		newState = ProcessingState
+	} else {
+		newState = ProcessedState
+	}
+	entry.State = newState
 	parent := entry.parent
 	for parent != nil {
-		parent.Processing = processing
+		parent.State = newState
 		parent = parent.parent
 	}
 }
