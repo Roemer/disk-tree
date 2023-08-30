@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"strings"
 )
 
 type EntryState int
@@ -28,6 +29,27 @@ type Entry struct {
 	parent   *Entry
 }
 
+func (e *Entry) GetChildFromPath(path string) *Entry {
+	// Split the path into parts
+	pathParts := strings.Split(path, string('/'))
+	// Walk thru the parts until the item is found
+	currentEntry := e
+	for _, part := range pathParts {
+		for _, file := range currentEntry.Files {
+			if file.Name == part {
+				return file
+			}
+		}
+		for _, dir := range currentEntry.Folders {
+			if dir.Name == part {
+				currentEntry = dir
+				break
+			}
+		}
+	}
+	return currentEntry
+}
+
 func (entry *Entry) addFile(path string, info fs.FileInfo) {
 	childEntry := &Entry{
 		Path:     path,
@@ -41,55 +63,104 @@ func (entry *Entry) addFile(path string, info fs.FileInfo) {
 }
 
 func Prepare(currentPath string) *Entry {
-	return &Entry{Path: currentPath, Name: "", IsFolder: true}
+	return &Entry{Path: currentPath, Name: currentPath, IsFolder: true}
 }
 
-func BuildTree(rootEntry *Entry) error {
+// This is a recursive approach to build the tree from top to down
+func BuildTreeRecursive(rootEntry *Entry) {
+	processEntry(rootEntry)
+}
+
+func processEntry(currentEntry *Entry) int64 {
+	// Set processing
+	currentEntry.State = ProcessingState
+	// Read the directory
+	childEntries, err := os.ReadDir(currentEntry.Path)
+	if err != nil {
+		fmt.Println(err)
+		currentEntry.Error = err
+		currentEntry.State = ErrorState
+		return 0
+	}
+	totalDirectorySize := int64(0)
+	directoriesToProcess := []*Entry{}
+	// Process the content of the directory
+	for _, entry := range childEntries {
+		// Compute the path of the entry
+		entryPath := path.Join(currentEntry.Path, entry.Name())
+		// Process a folder
+		if entry.IsDir() {
+			childDir := &Entry{Path: entryPath, Name: entry.Name(), IsFolder: true, parent: currentEntry}
+			currentEntry.Folders = append(currentEntry.Folders, childDir)
+			// Store the folder to process later
+			directoriesToProcess = append(directoriesToProcess, childDir)
+			continue
+		}
+		// Process a file
+		info, err := entry.Info()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		totalDirectorySize += info.Size()
+		currentEntry.addFile(entryPath, info)
+	}
+	// Now process the directories
+	for _, directory := range directoriesToProcess {
+		directorySize := processEntry(directory)
+		totalDirectorySize += directorySize
+		currentEntry.Size += directorySize
+	}
+	// Set processed
+	currentEntry.State = ProcessedState
+	return totalDirectorySize
+}
+
+// This is an iterative approach to build the tree which processes layer by layer
+func BuildTreeIterative(rootEntry *Entry) {
 	dirStack := []*Entry{rootEntry}
 	for len(dirStack) > 0 {
 		// Get the next directory to process
-		dir := dirStack[0]
+		currentEntry := dirStack[0]
 		// Pop it from the stack
 		dirStack = dirStack[1:]
 		// Mark it as processing
-		setProcessing(dir, true)
+		setProcessing(currentEntry, true)
 		// Read the directory
-		childEntries, err := os.ReadDir(dir.Path)
+		childEntries, err := os.ReadDir(currentEntry.Path)
 		if err != nil {
 			fmt.Println(err)
-			dir.Error = err
-			setProcessing(dir, false)
-			dir.State = ErrorState
+			currentEntry.Error = err
+			setProcessing(currentEntry, false)
+			currentEntry.State = ErrorState
 			continue
-			//return nil, err
 		}
 		// Process the child entries
 		for _, entry := range childEntries {
-			entryPath := path.Join(dir.Path, entry.Name())
-			// Process the folder
+			entryPath := path.Join(currentEntry.Path, entry.Name())
+			// Process a folder
 			if entry.IsDir() {
-				childDir := &Entry{Path: entryPath, Name: entry.Name(), IsFolder: true, parent: dir}
+				childDir := &Entry{Path: entryPath, Name: entry.Name(), IsFolder: true, parent: currentEntry}
 				dirStack = append(dirStack, childDir)
-				dir.Folders = append(dir.Folders, childDir)
+				currentEntry.Folders = append(currentEntry.Folders, childDir)
 				continue
 			}
-			// Process the file
+			// Process a file
 			info, err := entry.Info()
 			if err != nil {
 				fmt.Println(err)
 				continue
 			}
-			dir.addFile(entryPath, info)
+			currentEntry.addFile(entryPath, info)
 		}
 		// Increase the space of all parents
-		parent := dir.parent
+		parent := currentEntry.parent
 		for parent != nil {
-			parent.Size += dir.Size
+			parent.Size += currentEntry.Size
 			parent = parent.parent
 		}
-		setProcessing(dir, false)
+		setProcessing(currentEntry, false)
 	}
-	return nil
 }
 
 func setProcessing(entry *Entry, processing bool) {

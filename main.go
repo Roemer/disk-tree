@@ -4,7 +4,6 @@ import (
 	"disk-tree/core"
 	"fmt"
 	"sort"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -72,10 +71,7 @@ func main() {
 		if err == nil {
 			rootEntry = core.Prepare(currentPath)
 			go func() {
-				err := core.BuildTree(rootEntry)
-				if err != nil {
-					fmt.Println(err)
-				}
+				core.BuildTreeRecursive(rootEntry)
 				fileTree.Refresh()
 				progressIndicator.Stop()
 				progressIndicator.Hide()
@@ -109,6 +105,9 @@ func main() {
 	// The file tree
 	fileTree = widget.NewTree(
 		func(id widget.TreeNodeID) []widget.TreeNodeID {
+			if id == "" {
+				return []widget.TreeNodeID{rootEntry.Path}
+			}
 			ids := []widget.TreeNodeID{}
 			currEntry := getEntryFromTreeId(rootEntry, id)
 			for _, entry := range currEntry.Folders {
@@ -176,6 +175,7 @@ func main() {
 	// Window content
 	w.SetContent(
 		container.NewBorder(
+			// Top
 			container.NewVBox(
 				container.NewBorder(
 					nil, nil, widget.NewLabel("Path"), folderBrowseButton, folderEdit,
@@ -183,7 +183,10 @@ func main() {
 				startButton,
 				progressIndicator,
 				sortButton,
-			), nil, nil, nil, fileTree,
+			),
+			nil, nil, nil,
+			// Fill
+			fileTree,
 		),
 	)
 
@@ -194,25 +197,10 @@ func main() {
 
 func getEntryFromTreeId(rootEntry *core.Entry, path string) *core.Entry {
 	if rootEntry == nil {
-		return &core.Entry{Path: "STILL LOADING", Name: "STILL LOADING"}
+		return &core.Entry{Path: "LOADING", Name: "LOADING"}
 	}
-	if path == "" {
+	if path == rootEntry.Path {
 		return rootEntry
 	}
-	parts := strings.Split(path, string('/'))
-	currentEntry := rootEntry
-	for _, part := range parts {
-		for _, file := range currentEntry.Files {
-			if file.Name == part {
-				return file
-			}
-		}
-		for _, dir := range currentEntry.Folders {
-			if dir.Name == part {
-				currentEntry = dir
-				break
-			}
-		}
-	}
-	return currentEntry
+	return rootEntry.GetChildFromPath(path)
 }
