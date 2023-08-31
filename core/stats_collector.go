@@ -71,7 +71,7 @@ func BuildTreeRecursive(rootEntry *Entry) {
 	processEntry(rootEntry)
 }
 
-func processEntry(currentEntry *Entry) int64 {
+func processEntry(currentEntry *Entry) {
 	// Set processing
 	currentEntry.State = ProcessingState
 	// Read the directory
@@ -80,9 +80,8 @@ func processEntry(currentEntry *Entry) int64 {
 		fmt.Println(err)
 		currentEntry.Error = err
 		currentEntry.State = ErrorState
-		return 0
+		return
 	}
-	totalDirectorySize := int64(0)
 	directoriesToProcess := []*Entry{}
 	// Process the content of the directory
 	for _, entry := range childEntries {
@@ -102,18 +101,20 @@ func processEntry(currentEntry *Entry) int64 {
 			fmt.Println(err)
 			continue
 		}
-		totalDirectorySize += info.Size()
 		currentEntry.addFile(entryPath, info)
+	}
+	// Increase the space of the directory and all parents
+	parent := currentEntry.parent
+	for parent != nil {
+		parent.Size += currentEntry.Size
+		parent = parent.parent
 	}
 	// Now process the directories
 	for _, directory := range directoriesToProcess {
-		directorySize := processEntry(directory)
-		totalDirectorySize += directorySize
-		currentEntry.Size += directorySize
+		processEntry(directory)
 	}
 	// Set processed
 	currentEntry.State = ProcessedState
-	return totalDirectorySize
 }
 
 // This is an iterative approach to build the tree which processes layer by layer
