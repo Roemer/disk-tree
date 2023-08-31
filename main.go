@@ -3,7 +3,6 @@ package main
 import (
 	"disk-tree/core"
 	"fmt"
-	"sort"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -19,24 +18,66 @@ func main() {
 	a := app.NewWithID("roemer.go-disk-tree")
 
 	// Create the window
-	w := a.NewWindow("Disk Tree")
-	w.Resize(fyne.NewSize(800, 600))
+	window := a.NewWindow("Disk Tree")
+	window.Resize(fyne.NewSize(800, 600))
 
-	// Menu
+	// UI elements used in various places
+	var fileTree *widget.Tree
+
+	// Settings
+	separateFoldersAndFilesSetting := true
+	sortBySetting := core.SortByName
+
+	// Main Menu
 	menuFile := fyne.NewMenu("File")
 	menuSettings := fyne.NewMenu("Settings")
-
-	var item *fyne.MenuItem
-	item = fyne.NewMenuItem("My Feature", func() {
-		item.Checked = !item.Checked
+	// Menu Sorting
+	var sortByNameMenu, sortBySizeMenu *fyne.MenuItem
+	// By Name
+	sortByNameMenu = fyne.NewMenuItem("By Name", func() {
+		if sortBySetting != core.SortByName {
+			sortBySetting = core.SortByName
+			sortByNameMenu.Checked = true
+			sortBySizeMenu.Checked = false
+			menuSettings.Refresh()
+			fileTree.Refresh()
+		}
+	})
+	sortByNameMenu.Checked = sortBySetting == 0
+	// By Size
+	sortBySizeMenu = fyne.NewMenuItem("By Size", func() {
+		if sortBySetting != core.SortBySize {
+			sortBySetting = core.SortBySize
+			sortBySizeMenu.Checked = true
+			sortByNameMenu.Checked = false
+			menuSettings.Refresh()
+			fileTree.Refresh()
+		}
+	})
+	sortBySizeMenu.Checked = sortBySetting == 1
+	// Sort Menu
+	sortMenuItem := fyne.NewMenuItem("Sort Order", nil)
+	sortMenuItem.ChildMenu = fyne.NewMenu("Sort Options", sortByNameMenu, sortBySizeMenu)
+	// Separate Folders / Files
+	var separateFoldersAndFilesMenu *fyne.MenuItem
+	separateFoldersAndFilesMenu = fyne.NewMenuItem("Separate Folders/Files", func() {
+		separateFoldersAndFilesSetting = !separateFoldersAndFilesSetting
+		separateFoldersAndFilesMenu.Checked = separateFoldersAndFilesSetting
 		menuSettings.Refresh()
+		fileTree.Refresh()
+	})
+	separateFoldersAndFilesMenu.Checked = separateFoldersAndFilesSetting
+	// Exclusions
+	exclusionsMenu := fyne.NewMenuItem("Exclusions", func() {
+		dialog.ShowCustomConfirm("Exclusion List", "Ok", "Cancel", container.NewStack(widget.NewMultiLineEntry()), nil, window)
 	})
 
-	menuSettings.Items = append(menuSettings.Items, item)
+	// Build the menu
+	menuSettings.Items = append(menuSettings.Items, sortMenuItem, separateFoldersAndFilesMenu, exclusionsMenu)
 	mainMenu := fyne.NewMainMenu(menuFile, menuSettings)
-	w.SetMainMenu(mainMenu)
+	window.SetMainMenu(mainMenu)
 
-	// Folder Selection
+	// Folder selection
 	folderPathBinding := binding.BindPreferenceString("path", fyne.CurrentApp().Preferences())
 	folderEdit := widget.NewEntryWithData(folderPathBinding)
 	folderBrowseButton := widget.NewButton("Browse", func() {
@@ -44,7 +85,7 @@ func main() {
 			if lu != nil {
 				folderPathBinding.Set(lu.Path())
 			}
-		}, w)
+		}, window)
 		currentPath, err := folderPathBinding.Get()
 		if err != nil {
 			uri := storage.NewFileURI(currentPath)
@@ -62,7 +103,6 @@ func main() {
 	progressIndicator.Hide()
 
 	// Start button
-	var fileTree *widget.Tree
 	var rootEntry *core.Entry
 	startButton := widget.NewButton("Start", func() {
 		progressIndicator.Show()
@@ -79,29 +119,6 @@ func main() {
 		}
 	})
 
-	// Sort Button
-	sortButton := widget.NewButton("Sort", func() {
-		dirStack := []*core.Entry{rootEntry}
-		for len(dirStack) > 0 {
-			// Get the next item and remove it from the stack
-			dirIndex := len(dirStack) - 1
-			dir := dirStack[dirIndex]
-			dirStack = dirStack[:dirIndex]
-			// Sort the folders from the dir
-			sort.Slice(dir.Folders, func(i, j int) bool {
-				return dir.Folders[i].Size > dir.Folders[j].Size
-			})
-			// Sort the files from the dir
-			sort.Slice(dir.Files, func(i, j int) bool {
-				return dir.Files[i].Size > dir.Files[j].Size
-			})
-			// Add all folders to the stack to process
-			dirStack = append(dirStack, dir.Folders...)
-		}
-
-		fileTree.Refresh()
-	})
-
 	// The file tree
 	fileTree = widget.NewTree(
 		func(id widget.TreeNodeID) []widget.TreeNodeID {
@@ -110,10 +127,29 @@ func main() {
 			}
 			ids := []widget.TreeNodeID{}
 			currEntry := getEntryFromTreeId(rootEntry, id)
-			for _, entry := range currEntry.Folders {
-				ids = append(ids, entry.Path)
+
+			// Sorting
+			entries := []*core.Entry{}
+			if separateFoldersAndFilesSetting {
+				// Separately sort folders, then files, then merge them
+				dirEntries := []*core.Entry{}
+				dirEntries = append(dirEntries, currEntry.Folders...)
+				core.SortEntries(sortBySetting, dirEntries)
+
+				fileEntries := []*core.Entry{}
+				fileEntries = append(fileEntries, currEntry.Files...)
+				core.SortEntries(sortBySetting, fileEntries)
+
+				entries = append(entries, dirEntries...)
+				entries = append(entries, fileEntries...)
+			} else {
+				// Sort folders and files together
+				entries = append(entries, currEntry.Folders...)
+				entries = append(entries, currEntry.Files...)
+				core.SortEntries(sortBySetting, entries)
 			}
-			for _, entry := range currEntry.Files {
+			// Add all the ids
+			for _, entry := range entries {
 				ids = append(ids, entry.Path)
 			}
 			return ids
@@ -173,7 +209,7 @@ func main() {
 		})
 
 	// Window content
-	w.SetContent(
+	window.SetContent(
 		container.NewBorder(
 			// Top
 			container.NewVBox(
@@ -182,7 +218,6 @@ func main() {
 				),
 				startButton,
 				progressIndicator,
-				sortButton,
 			),
 			nil, nil, nil,
 			// Fill
@@ -191,8 +226,8 @@ func main() {
 	)
 
 	// Center and start the application
-	w.CenterOnScreen()
-	w.ShowAndRun()
+	window.CenterOnScreen()
+	window.ShowAndRun()
 }
 
 func getEntryFromTreeId(rootEntry *core.Entry, path string) *core.Entry {

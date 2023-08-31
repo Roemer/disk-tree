@@ -74,7 +74,7 @@ func BuildTreeRecursive(rootEntry *Entry) {
 func processEntry(currentEntry *Entry) {
 	// Set processing
 	currentEntry.State = ProcessingState
-	// Read the directory
+	// Read the folder
 	childEntries, err := os.ReadDir(currentEntry.Path)
 	if err != nil {
 		fmt.Println(err)
@@ -82,8 +82,8 @@ func processEntry(currentEntry *Entry) {
 		currentEntry.State = ErrorState
 		return
 	}
-	directoriesToProcess := []*Entry{}
-	// Process the content of the directory
+	foldersToProcess := []*Entry{}
+	// Process the content of the folder
 	for _, entry := range childEntries {
 		// Compute the path of the entry
 		entryPath := path.Join(currentEntry.Path, entry.Name())
@@ -92,7 +92,7 @@ func processEntry(currentEntry *Entry) {
 			childDir := &Entry{Path: entryPath, Name: entry.Name(), IsFolder: true, parent: currentEntry}
 			currentEntry.Folders = append(currentEntry.Folders, childDir)
 			// Store the folder to process later
-			directoriesToProcess = append(directoriesToProcess, childDir)
+			foldersToProcess = append(foldersToProcess, childDir)
 			continue
 		}
 		// Process a file
@@ -103,15 +103,15 @@ func processEntry(currentEntry *Entry) {
 		}
 		currentEntry.addFile(entryPath, info)
 	}
-	// Increase the space of the directory and all parents
+	// Increase the space of the folder and all parents
 	parent := currentEntry.parent
 	for parent != nil {
 		parent.Size += currentEntry.Size
 		parent = parent.parent
 	}
-	// Now process the directories
-	for _, directory := range directoriesToProcess {
-		processEntry(directory)
+	// Now process the folders
+	for _, folder := range foldersToProcess {
+		processEntry(folder)
 	}
 	// Set processed
 	currentEntry.State = ProcessedState
@@ -121,13 +121,13 @@ func processEntry(currentEntry *Entry) {
 func BuildTreeIterative(rootEntry *Entry) {
 	dirStack := []*Entry{rootEntry}
 	for len(dirStack) > 0 {
-		// Get the next directory to process
+		// Get the next folder to process
 		currentEntry := dirStack[0]
 		// Pop it from the stack
 		dirStack = dirStack[1:]
 		// Mark it as processing
 		setProcessing(currentEntry, true)
-		// Read the directory
+		// Read the folder
 		childEntries, err := os.ReadDir(currentEntry.Path)
 		if err != nil {
 			fmt.Println(err)
