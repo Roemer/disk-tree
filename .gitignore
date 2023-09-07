@@ -1,3 +1,9 @@
+# Secrets
+.devcontainer/.env
+
+# Build files
+.temp/
+.build-output/
 disk-tree
 disk-tree.exe
 disk-tree.tar.xz
