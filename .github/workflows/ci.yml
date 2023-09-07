@@ -7,16 +7,22 @@ on:
     branches: [ "main" ]
 
   workflow_dispatch:
+    inputs:
+      make_release:
+        description: 'True to make a release'
+        required: true
+        type: boolean
 
 env:
-  GO_VERSION: 1.21.0
+  GO_VERSION: 1.21.1
 
 jobs:
+  # Build Job
   build:
     runs-on: ubuntu-22.04
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Install Go
         run: |
@@ -40,14 +46,50 @@ jobs:
       - name: Build Linux
         run:  go run ./build/build.go --target "Compile:Linux"
 
-      - name: 'Upload Windows Artifact'
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v3
         with:
           name: Windows
-          path: disk-tree.exe
+          path: .build-output/disk-tree.exe
 
-      - name: 'Upload Linux Artifact'
+      - name: Upload Linux Artifact
         uses: actions/upload-artifact@v3
         with:
           name: Linux
-          path: disk-tree.tar.xz
+          path: .build-output/disk-tree.tar.xz
+
+  # Release Job
+  release:
+    if: ${{ inputs.make_release }}
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Windows
+          path: .build-output/
+
+      - name: Download Linux Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Linux
+          path: .build-output/
+
+      - name: Install Go
+        run: |
+          echo "/usr/local/go/bin" >> $GITHUB_PATH
+          wget --no-verbose "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+          sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+          rm "go${GO_VERSION}.linux-amd64.tar.gz"
+
+      - name: Create the release
+        run:  go run ./build/build.go --target "Release:Create"
+
