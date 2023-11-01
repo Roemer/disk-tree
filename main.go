@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"disk-tree/core"
 	"fmt"
 
@@ -102,22 +103,43 @@ func main() {
 	progressIndicator.Stop()
 	progressIndicator.Hide()
 
-	// Start button
+	// Start/Stop buttons
 	var rootEntry *core.Entry
-	startButton := widget.NewButton("Start", func() {
+	var ctx context.Context
+	var cancel context.CancelFunc
+	var startButton *widget.Button
+	var stopButton *widget.Button
+
+	startButton = widget.NewButton("Start", func() {
+		startButton.Hide()
+		stopButton.Show()
 		progressIndicator.Show()
 		progressIndicator.Start()
 		currentPath, err := folderPathBinding.Get()
 		if err == nil {
+			// Prepare the context
+			ctx, cancel = context.WithCancel(context.Background())
+
+			// Prepare the root entry
 			rootEntry = core.Prepare(currentPath)
 			go func() {
-				core.BuildTreeRecursive(rootEntry)
+				core.BuildTreeRecursive(rootEntry, ctx)
+				ctx = nil
+				cancel = nil
 				fileTree.Refresh()
 				progressIndicator.Stop()
 				progressIndicator.Hide()
+				stopButton.Hide()
+				startButton.Show()
 			}()
 		}
 	})
+	stopButton = widget.NewButton("Stop", func() {
+		if cancel != nil {
+			cancel()
+		}
+	})
+	stopButton.Hide()
 
 	// The file tree
 	fileTree = widget.NewTree(
@@ -217,6 +239,7 @@ func main() {
 					nil, nil, widget.NewLabel("Path"), folderBrowseButton, folderEdit,
 				),
 				startButton,
+				stopButton,
 				progressIndicator,
 			),
 			nil, nil, nil,

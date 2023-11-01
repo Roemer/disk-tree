@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -67,11 +68,18 @@ func Prepare(currentPath string) *Entry {
 }
 
 // This is a recursive approach to build the tree from top to down
-func BuildTreeRecursive(rootEntry *Entry) {
-	processEntry(rootEntry)
+func BuildTreeRecursive(rootEntry *Entry, ctx context.Context) {
+	processEntry(rootEntry, ctx)
 }
 
-func processEntry(currentEntry *Entry) {
+func processEntry(currentEntry *Entry, ctx context.Context) {
+	// Handle cancellation
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
 	// Set processing
 	currentEntry.State = ProcessingState
 	// Read the folder
@@ -111,7 +119,7 @@ func processEntry(currentEntry *Entry) {
 	}
 	// Now process the folders
 	for _, folder := range foldersToProcess {
-		processEntry(folder)
+		processEntry(folder, ctx)
 	}
 	// Set processed
 	currentEntry.State = ProcessedState
