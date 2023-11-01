@@ -3,7 +3,7 @@ module disk-tree
 go 1.21.0
 
 require (
-	fyne.io/fyne/v2 v2.4.1-0.20230921082715-67e4ecb814d4
+	fyne.io/fyne/v2 v2.4.1
 	github.com/google/go-github/v54 v54.0.0
 	github.com/roemer/gotaskr v0.3.12
 )
