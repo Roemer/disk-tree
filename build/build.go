@@ -27,8 +27,8 @@ func main() {
 
 func init() {
 	gotaskr.Task("Setup:Fyne-Cmd", func() error {
-		// fyne.io/fyne/v2/cmd/fyne@latest
-		return execr.Run(true, "go", "install", "fyne.io/fyne/v2/cmd/fyne@develop")
+		version := "latest" // latest or develop
+		return execr.Run(true, "go", "install", fmt.Sprintf("fyne.io/fyne/v2/cmd/fyne@%s", version))
 	})
 
 	gotaskr.Task("Compile:Windows", func() error {
