@@ -4,6 +4,7 @@ import (
 	"context"
 	"disk-tree/core"
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -122,15 +123,26 @@ func main() {
 
 			// Prepare the root entry
 			rootEntry = core.Prepare(currentPath)
+
+			// Start a goroutine which builds the tree in another subroutine and regularly refreshes the tree
 			go func() {
-				core.BuildTreeRecursive(rootEntry, ctx)
-				ctx = nil
-				cancel = nil
-				fileTree.Refresh()
-				progressIndicator.Stop()
-				progressIndicator.Hide()
-				stopButton.Hide()
-				startButton.Show()
+				go func() {
+					core.BuildTreeRecursive(rootEntry, ctx)
+					defer cancel()
+				}()
+				for {
+					select {
+					case <-ctx.Done():
+						fileTree.Refresh()
+						progressIndicator.Stop()
+						progressIndicator.Hide()
+						stopButton.Hide()
+						startButton.Show()
+						return
+					case <-time.After(5 * time.Second):
+						fileTree.Refresh()
+					}
+				}
 			}()
 		}
 	})
