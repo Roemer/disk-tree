@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2024-04-02
+
+### Features
+
+- Implemented exclusion list
+
 ## [0.2.0] - 2023-11-01
 
 ### Features
