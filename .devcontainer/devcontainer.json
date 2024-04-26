@@ -1,14 +1,15 @@
 {
 	"name": "Disk Tree",
 	"initializeCommand": "touch ./.devcontainer/.env",
-	"dockerFile": "Dockerfile",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
 	"runArgs": [
-		"--env-file", "${localWorkspaceFolder}/.devcontainer/.env"
+		"--env-file",
+		"${localWorkspaceFolder}/.devcontainer/.env"
 	],
 	"customizations": {
 		"vscode": {
-			"settings": {
-			},
 			"extensions": [
 				"golang.go",
 				"roemer.gotaskr-vscode",

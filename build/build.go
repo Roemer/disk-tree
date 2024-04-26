@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/google/go-github/v54/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/roemer/gotaskr"
 	"github.com/roemer/gotaskr/execr"
 	"github.com/roemer/gotaskr/log"
