@@ -14,7 +14,7 @@ on:
         type: boolean
 
 env:
-  GO_VERSION: 1.21.1
+  GO_VERSION: 1.22.2
 
 jobs:
   # Build Job

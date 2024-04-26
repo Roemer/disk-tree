@@ -4,6 +4,7 @@ import (
 	"context"
 	"disk-tree/core"
 	"fmt"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -71,7 +72,18 @@ func main() {
 	separateFoldersAndFilesMenu.Checked = separateFoldersAndFilesSetting
 	// Exclusions
 	exclusionsMenu := fyne.NewMenuItem("Exclusions", func() {
-		dialog.ShowCustomConfirm("Exclusion List", "Ok", "Cancel", container.NewStack(widget.NewMultiLineEntry()), nil, window)
+		multiLineEntry := widget.NewMultiLineEntry()
+		multiLineEntry.Wrapping = fyne.TextWrapOff
+		currentValues := strings.Join(fyne.CurrentApp().Preferences().StringListWithFallback("exclusions", []string{}), "\n")
+		multiLineEntry.SetText(currentValues)
+		customDialog := dialog.NewCustomConfirm("Exclusion List", "Ok", "Cancel", container.NewStack(multiLineEntry), func(b bool) {
+			if b {
+				items := strings.Split(multiLineEntry.Text, "\n")
+				fyne.CurrentApp().Preferences().SetStringList("exclusions", items)
+			}
+		}, window)
+		customDialog.Resize(fyne.NewSize(600, 400))
+		customDialog.Show()
 	})
 
 	// Build the menu
@@ -124,10 +136,20 @@ func main() {
 			// Prepare the root entry
 			rootEntry = core.Prepare(currentPath)
 
+			// Get the exclusions
+			exclusions := fyne.CurrentApp().Preferences().StringListWithFallback("exclusions", []string{})
+
+			// Build the settings object
+			settings := core.ProcessSettings{
+				Context:      ctx,
+				CurrentEntry: rootEntry,
+				Exclusions:   exclusions,
+			}
+
 			// Start a goroutine which builds the tree in another subroutine and regularly refreshes the tree
 			go func() {
 				go func() {
-					core.BuildTreeRecursive(rootEntry, ctx)
+					core.BuildTreeRecursive(settings)
 					defer cancel()
 				}()
 				for {

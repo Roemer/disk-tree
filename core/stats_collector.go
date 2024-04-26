@@ -30,6 +30,12 @@ type Entry struct {
 	parent   *Entry
 }
 
+type ProcessSettings struct {
+	CurrentEntry *Entry
+	Context      context.Context
+	Exclusions   []string
+}
+
 func (e *Entry) GetChildFromPath(path string) *Entry {
 	// Split the path into parts
 	pathParts := strings.Split(path, string('/'))
@@ -68,11 +74,13 @@ func Prepare(currentPath string) *Entry {
 }
 
 // This is a recursive approach to build the tree from top to down
-func BuildTreeRecursive(rootEntry *Entry, ctx context.Context) {
-	processEntry(rootEntry, ctx)
+func BuildTreeRecursive(settings ProcessSettings) {
+	processEntry(settings)
 }
 
-func processEntry(currentEntry *Entry, ctx context.Context) {
+func processEntry(settings ProcessSettings) {
+	ctx := settings.Context
+	currentEntry := settings.CurrentEntry
 	// Handle cancellation
 	select {
 	case <-ctx.Done():
@@ -95,6 +103,17 @@ func processEntry(currentEntry *Entry, ctx context.Context) {
 	for _, entry := range childEntries {
 		// Compute the path of the entry
 		entryPath := path.Join(currentEntry.Path, entry.Name())
+		// Check the exclusion list and skip if needed
+		isExcluded := false
+		for _, exclusion := range settings.Exclusions {
+			if strings.HasPrefix(strings.ReplaceAll(entryPath, "\\", "/"), strings.ReplaceAll(exclusion, "\\", "/")) {
+				isExcluded = true
+				break
+			}
+		}
+		if isExcluded {
+			continue
+		}
 		// Process a folder
 		if entry.IsDir() {
 			childDir := &Entry{Path: entryPath, Name: entry.Name(), IsFolder: true, parent: currentEntry}
@@ -119,7 +138,11 @@ func processEntry(currentEntry *Entry, ctx context.Context) {
 	}
 	// Now process the folders
 	for _, folder := range foldersToProcess {
-		processEntry(folder, ctx)
+		processEntry(ProcessSettings{
+			Context:      ctx,
+			CurrentEntry: folder,
+			Exclusions:   settings.Exclusions,
+		})
 	}
 	// Set processed
 	currentEntry.State = ProcessedState

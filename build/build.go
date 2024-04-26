@@ -14,7 +14,7 @@ import (
 )
 
 // Build variables
-var version = "0.2.0"
+var version = "0.3.0"
 
 // Internal variables
 var outputDirectory = ".build-output"
